@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kolkata Metro Route Finder</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            margin: 0;
+            padding: 20px;
+            color: #444;
+        }
+        h1 {
+            text-align: center;
+            color: #fff;
+            font-size: 36px;
+            margin-bottom: 20px;
+            animation: fadeInDown 1s;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            animation: fadeInUp 1s;
+        }
+        label {
+            font-size: 18px;
+            margin-top: 20px;
+            display: block;
+        }
+        select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            background-color: #f9f9f9;
+            color: #333;
+            transition: border 0.3s;
+        }
+        select:focus {
+            border-color: #007bff;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: background-color 0.3s, transform 0.3s;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e7f3fe;
+            border-left: 6px solid #2196F3;
+            border-radius: 8px;
+            animation: fadeInUp 0.8s;
+        }
+        .result h3 {
+            margin-top: 0;
+        }
+        .result p {
+            margin: 5px 0;
+            font-size: 16px;
+        }
+        /* Keyframes for fade-in animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-subway"></i> Kolkata Metro Route Finder</h1>
+
+        <label for="source"><i class="fas fa-map-marker-alt"></i> Source Station:</label>
+        <select id="source">
+            <!-- Station options will be filled dynamically -->
+        </select>
+
+        <label for="destination"><i class="fas fa-map-marker-alt"></i> Destination Station:</label>
+        <select id="destination">
+            <!-- Station options will be filled dynamically -->
+        </select>
+
+        <button onclick="findRoute()"><i class="fas fa-route"></i> Find Shortest Route</button>
+
+        <div id="output" class="result" style="display:none;">
+            <h3><i class="fas fa-road"></i> Shortest Path</h3>
+            <p id="path"></p>
+
+            <h3><i class="fas fa-arrows-alt-h"></i> Approx Distance</h3>
+            <p id="distance"></p>
+
+            <h3><i class="fas fa-rupee-sign"></i> Fare</h3>
+            <p id="fare"></p>
+
+            <h3><i class="fas fa-clock"></i> Estimated Time</h3>
+            <p id="time"></p>
+        </div>
+    </div>
+
+    <script>
+        const stations = [
+            "Howrah Maidan", "Howrah", "Mahakaran", "Esplanade", "Sealdah", "Phoolbagan",
+            "Salt Lake Stadium", "Bengal Chemical", "City Center", "Central Park", "Karunamoyee",
+            "Salt Lake Sector V", "Nicco Park", "Gour Kishore Ghosh", "Beliaghata", "Barun Sengupta",
+            "Ritwik Ghatak", "VIP Bazar", "Hemanta Mukherjee", "Kavi Sukanata", "Jyotirindra Nath Nandi",
+            "Satyajit Ray", "Kavi Subhas", "Shahid Khudiram", "Kavi Nazrul", "Gitanjali", "Masterda Surya Sen",
+            "Netaji", "Mahanayak Uttam Kumar", "Rabindra Sarobar", "Kalighat", "Jatin Das Park", 
+            "Netaji Bhavan", "Rabindra Sadan", "Maidan", "Park Street", "Chandni Chowk", "Central", 
+            "Mahatma Gandhi Road", "Girish Park", "Shobhabazar Sutanuti", "Shyambazar", "Belgachia", 
+            "Dum Dum", "Noapara", "Baranagar", "Dakshineswar", "Victoria", "Kidderpore", "Mominpur", 
+            "Majerhat", "Taratala", "Behala Bazar", "Behala Chowrasta", "Sakherbazar", "Thakurpukur", "Joka"
+        ];
+
+        const sourceSelect = document.getElementById('source');
+        const destSelect = document.getElementById('destination');
+        const outputDiv = document.getElementById('output');
+
+        // Dynamically populate station options
+        function populateStations() {
+            stations.forEach((station, index) => {
+                const option1 = document.createElement('option');
+                option1.value = index;
+                option1.text = station;
+                sourceSelect.add(option1);
+
+                const option2 = document.createElement('option');
+                option2.value = index;
+                option2.text = station;
+                destSelect.add(option2);
+            });
+        }
+
+        function findRoute() {
+            const source = sourceSelect.value;
+            const destination = destSelect.value;
+
+            if (source === destination) {
+                alert("Source and destination cannot be the same!");
+                return;
+            }
+
+            // Call backend (Java) logic to calculate the route
+            const path = "Sample Path: Howrah Maidan -> Esplanade -> Sealdah"; // Replace this with actual result from backend
+            const distance = "5 KM"; // Example data from backend
+            const fare = "₹20"; // Example fare from backend
+            const time = "15 minutes"; // Example time from backend
+
+            // Show the results
+            document.getElementById('path').innerText = path;
+            document.getElementById('distance').innerText = distance;
+            document.getElementById('fare').innerText = fare;
+            document.getElementById('time').innerText = time;
+
+            outputDiv.style.display = 'block';
+        }
+
+        // Populate the station lists on page load
+        window.onload = populateStations;
+    </script>
+</body>
+</html>
